@@ -7,7 +7,6 @@
 */
 
 'use strict';
-var spawn = require('win-spawn');
 var which = require('which');
 
 module.exports = function (grunt) {
@@ -39,23 +38,25 @@ module.exports = function (grunt) {
 
     // Make sure config file exists
     if (!grunt.file.exists(configPath)) {
-      return grunt.warn('Config file "' + configPath + '" not found.');
+      // this fails for relative paths currently, somehow
+      grunt.warn('Config file "' + configPath + '" not found, cwd: ' + process.cwd() );
+      //return grunt.warn('Config file "' + configPath + '" not found.');
     }
 
     // Run hologram
-    var cp = spawn(cmd, [configPath], {stdio: 'inherit'});
+    var options = {
+      cmd: cmd,
+      args: [configPath]
+    }
 
-    cp.on('error', function (err) {
-      done(err);
-    });
-
-    cp.on('close', function (code) {
-      if (code > 0) {
+    function doneFunction(error, result, code) {
+      grunt.log.write(result.stdout);
+      grunt.log.write(result.stderr);
+      if ( code > 0 ) {
         done(new Error('Exited with error code ' + code));
-      } else {
-        done();
       }
-    });
+    }
+    grunt.util.spawn(options, doneFunction);
 
   });
 
